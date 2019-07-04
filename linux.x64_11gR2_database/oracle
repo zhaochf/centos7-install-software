@@ -1,0 +1,31 @@
+#! /bin/bash
+# chkconfig: 234 61 61
+# description: Oracle 11g AutoRun Service
+# /etc/rc.d/init.d/oracle
+
+export ORACLE_BASE=/data/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/oracle/product/11.2.0/db_1
+export ORACLE_SID=ORCL
+export PATH=$PATH:$ORACLE_HOME/bin
+ORA_OWNR="orcl"
+
+case "$1" in
+    start)
+        # starts oracle listener and instance
+        echo "Starting Oracle Database:"
+        su $ORA_OWNR -lc $ORACLE_HOME/bin/dbstart
+        ;;
+    stop)
+        # shutdown oracle listner and instance
+        echo "Shuting down Oracle Database:"
+        su $ORA_OWNR -lc $ORACLE_HOME/bin/dbshut
+        ;;
+    reload|restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: {start|stop|reload|restart}"
+        exit 1
+esac
+exit 0
