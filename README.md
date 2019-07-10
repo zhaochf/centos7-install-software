@@ -24,7 +24,7 @@ centos7 auto install software shell.
 3. Install MySQL slave
   ./install.sh -t slave -p /data/app -m 192.168.1.10
 4. Init slave database data
-  bin/mysql -uroot -proot -e "source /data/software/pbcdesk.sql" pbcdesk
+  bin/mysql -uroot -proot -e "source /xxx/dbname.sql" dbname
 5. Start slave
   bin/mysql -uroot -proot
   START SLAVE;
