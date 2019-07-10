@@ -10,14 +10,11 @@ usage() {
 
 
 Usage: install mysql 5.7.26 [OPTIONS] [arg [arg ...]]
-  -t MySQL instance type master or slave, default master.
   -p MySQL instance install path, default /data/app
-  -m MySQL master instance host
 
 Examples:
   install.sh -h
-  install.sh -t master or install.sh -t master -p /data/app
-  install.sh -t slave -m "192.168.1.10 3306" or install.sh -t slave -p /data/app -m "192.168.1.10"
+  install.sh or install.sh -p /data/app
 EOF
 }
 
@@ -32,19 +29,11 @@ find_software_basedir() {
 
 software_path=`find_software_basedir "$(pwd)"`
 install_path="/data/app"
-type="master"
-master=
 
-while getopts ":ht:p:m:" opt; do
+while getopts ":hp:" opt; do
   case $opt in
-  t)
-    type=$OPTARG
-    ;;
   p)
     install_path=$OPTARG
-    ;;
-  m)
-    master=$OPTARG
     ;;
   h)
     usage
@@ -60,6 +49,8 @@ done
 install() {
   # Delete centos7 default my.cnf and create install path
   rm -rf /etc/my.cnf*
+  firewall-cmd --permanent --zone=public --add-port=3306/tcp
+  systemctl restart firewalld
   
   # Install mysql
   yum -q -y install libaio
@@ -92,36 +83,10 @@ change_passowrd() {
 EOF
 }
 
-install_master() {
+create_replaction() {
   bin/mysql -uroot -proot << EOF
     CREATE USER 'repl'@'%' IDENTIFIED BY 'repl';
     GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
-EOF
-}
-
-install_slave() {
-  if [ -a -z "$master" ]; then
-    echo "To install MySQL slave, you must specify the master host parameter..."
-    exit 1
-  fi
-  
-  service mysql.server stop
-  sed -i "s#^server_id = 1.*#server_id = 2#g" /etc/my.cnf
-  service mysql.server start
-  
-  select_sql="show master status"
-  result=`mysql -uroot -proot -h${master} -Bse "${select_sql}"`
-  file=`echo ${result} | awk '{print $1}'`
-  position=`echo ${result} | awk '{print $2}'`
-  
-  START SLAVE;
-  bin/mysql -uroot -proot << EOF
-    CHANGE MASTER TO
-         MASTER_HOST='${master}',
-         MASTER_USER='repl',
-         MASTER_PASSWORD='repl',
-         MASTER_LOG_FILE='${file}',
-         MASTER_LOG_POS='${p}';
 EOF
 }
 
@@ -132,12 +97,7 @@ install
 count=`ps -ef | grep mysql | grep -v "grep" | wc -l`
 if [ $count -gt 0 ]; then
   change_passowrd
-  if [ $type = "master" ]; then
-    install_master
-  fi
-  if [ $type = "slave" ]; then
-    install_slave
-  fi
+  create_replaction
   echo "MySQL install succeed..."
   echo ""
 else

@@ -22,10 +22,22 @@ centos7 auto install software shell.
   mysqldump --databases dbname > dbname.sql
   UNLOCK TABLES;
 3. Install MySQL slave
-  ./install.sh -t slave -p /data/app -m 192.168.1.10
+  ./install.sh -p /data/app
+  sed -i "s#^server_id = 1.*#server_id = 2#g" /etc/my.cnf
+  service mysql start
 4. Init slave database data
   bin/mysql -uroot -proot -e "source /xxx/dbname.sql" dbname
 5. Start slave
+  On master execute:
   bin/mysql -uroot -proot
+  show master status;
+  On slave execute:
+  bin/mysql -uroot -proot
+  CHANGE MASTER TO
+         MASTER_HOST='${master}',
+         MASTER_USER='repl',
+         MASTER_PASSWORD='repl',
+         MASTER_LOG_FILE='${file}',
+         MASTER_LOG_POS=${p};
   START SLAVE;
 6. help install option to use: ./install.sh -h
