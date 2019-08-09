@@ -5,6 +5,9 @@
 
 echo "Starting install oracle 11gR2 database, don't stop this program..."
 
+firewall-cmd --permanent --zone=public --add-port=1521/tcp
+systemctl restart firewalld
+
 yum -y install unzip
 
 # oracle install base dir
@@ -54,7 +57,7 @@ useradd -g oinstall -G dba,asmdba oracle -d /home/oracle
 
 # Update system parameters
 if [ ! -a "/etc/sysctl.conf.bak" ]
-then 
+then
   cp /etc/sysctl.conf /etc/sysctl.conf.bak
 fi
 sudo sed -i "s/fs.aio-max-nr = .*/fs.aio-max-nr = 1048576/g" /etc/sysctl.conf && \
@@ -72,11 +75,11 @@ sudo /sbin/sysctl -p
 
 # Update system security limit parameters
 if [ ! -a "/etc/security/limits.conf.bak" ]
-then 
+then
   cp /etc/security/limits.conf /etc/security/limits.conf.bak
 fi
 if [ ! -a "/etc/pam.d/login.bak" ]
-then 
+then
   cp /etc/pam.d/login /etc/pam.d/login.bak
 fi
 
@@ -90,7 +93,7 @@ sudo sed -i '$a session    required    pam_limits.so' /etc/pam.d/login
 
 # Set oracle user login limits
 if [ ! -a "/etc/profile.bak" ]
-then 
+then
   cp /etc/profile /etc/profile.bak
 fi
 
